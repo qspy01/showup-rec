@@ -1,0 +1,37 @@
+{
+    "name": "showuptv-rec",
+    "version": "0.0.1",
+    "description": "ShowUp.tv Recorder",
+    "main": "main.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/qspy01/showuptv-rec"
+    },
+    "author": "sstativa",
+    "license": "GNU GPL",
+    "bugs": {
+        "url": "https://github.com/qspy01/showuptv-rec/issues"
+    },
+    "homepage": "https://github.com/qspy01/showuptv-rec",
+    "dependencies": {
+        "axios": "^1.7.7",
+        "bhttp": "^1.2.1",
+        "bluebird": "^2.9.25",
+        "cheerio": "^0.19.0",
+        "colors": "^1.1.2",
+        "filewalker": "^0.1.3",
+        "fs": "^0.0.1-security",
+        "js-yaml": "^3.3.1",
+        "JSONStream": "^1.3.1",
+        "mkdirp": "^0.5.1",
+        "moment": "^2.10.3",
+        "mv": "^2.1.1",
+        "progress": "^2.0.3",
+        "promise-queue": "^2.2.3",
+        "string": "^3.1.1",
+        "tus-js-client": "^4.2.3"
+    }
+}
