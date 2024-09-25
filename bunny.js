@@ -4,8 +4,8 @@ const path = require('path');
 const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
 const ProgressBar = require('progress');
 
-// Funkcja do sprawdzenia lub utworzenia kolekcji z dodatkowym logowaniem
-async function getOrCreateCollection(modelName, apiKey, libraryId) {
+// Funkcja do sprawdzenia istniejącej kolekcji
+async function getCollection(modelName, apiKey, libraryId) {
     const collectionsUrl = `https://video.bunnycdn.com/library/${libraryId}/collections`;
     const headers = { 'AccessKey': apiKey, 'Content-Type': 'application/json' };
 
@@ -15,27 +15,53 @@ async function getOrCreateCollection(modelName, apiKey, libraryId) {
         console.log(`Odpowiedź API (kolekcje):`, collectionsResponse.data);
 
         const collections = collectionsResponse.data.items;
-        const existingCollection = collections.find(collection => collection.name === modelName);
-
-        if (existingCollection) {
-            console.log(`Znaleziono istniejącą kolekcję: ${existingCollection.id}`);
-            return existingCollection.id;
-        }
-
-        // Tworzenie nowej kolekcji
-        console.log(`Tworzenie nowej kolekcji dla modelki: ${modelName}`);
-        const newCollectionResponse = await axios.post(collectionsUrl, { name: modelName }, { headers });
-        console.log(`Odpowiedź API (nowa kolekcja):`, newCollectionResponse.data);
-
-        return newCollectionResponse.data.id;
+        return collections.find(collection => collection.name === modelName);
 
     } catch (error) {
-        console.error(`Błąd podczas sprawdzania lub tworzenia kolekcji: ${error.response ? error.response.data.Message : error.message}`);
+        console.error(`Błąd podczas pobierania kolekcji: ${error.response ? error.response.data.Message : error.message}`);
         throw error;
     }
 }
 
-// Funkcja do tworzenia wideo z ponawianiem w przypadku błędów
+// Funkcja do tworzenia nowej kolekcji
+async function createCollection(modelName, apiKey, libraryId) {
+    const collectionsUrl = `https://video.bunnycdn.com/library/${libraryId}/collections`;
+    const headers = { 'AccessKey': apiKey, 'Content-Type': 'application/json' };
+
+    try {
+        console.log(`Tworzenie nowej kolekcji dla modelki: ${modelName}`);
+        const newCollectionResponse = await axios.post(collectionsUrl, { name: modelName }, { headers });
+        console.log(`Odpowiedź API (nowa kolekcja):`, newCollectionResponse.data);
+
+        if (!newCollectionResponse.data || !newCollectionResponse.data.guid) {
+            console.error('Brak GUID nowej kolekcji w odpowiedzi API.');
+            console.error('Odpowiedź:', newCollectionResponse.data);
+            throw new Error('GUID kolekcji jest undefined.');
+        }
+
+        return newCollectionResponse.data.guid;
+
+    } catch (error) {
+        console.error(`Błąd podczas tworzenia kolekcji: ${error.response ? error.response.data : error.message}`);
+        if (error.response) {
+            console.error('Szczegóły odpowiedzi:', error.response.status, error.response.data);
+        }
+        throw error;
+    }
+}
+
+// Funkcja do sprawdzenia lub utworzenia kolekcji
+async function getOrCreateCollection(modelName, apiKey, libraryId) {
+    const existingCollection = await getCollection(modelName, apiKey, libraryId);
+    if (existingCollection) {
+        console.log(`Znaleziono istniejącą kolekcję: ${existingCollection.guid || 'undefined'}`);
+        return existingCollection.guid;
+    }
+
+    return await createCollection(modelName, apiKey, libraryId);
+}
+
+// Funkcja do tworzenia wideo z walidacją odpowiedzi API
 async function createVideo(libraryId, collectionId, title, apiKey) {
     const url = `https://video.bunnycdn.com/library/${libraryId}/videos`;
     const headers = { 'AccessKey': apiKey, 'Content-Type': 'application/json' };
@@ -46,6 +72,11 @@ async function createVideo(libraryId, collectionId, title, apiKey) {
             console.log(`Tworzenie wideo: ${title} (próba ${attempt})`);
             const response = await axios.post(url, data, { headers });
             console.log(`Odpowiedź API (tworzenie wideo):`, response.data);
+
+            if (!response.data.guid) {
+                throw new Error('Brak GUID wideo w odpowiedzi API.');
+            }
+
             return response.data.guid;
 
         } catch (error) {
@@ -58,7 +89,7 @@ async function createVideo(libraryId, collectionId, title, apiKey) {
     }
 }
 
-// Funkcja do uploadu wideo strumieniowo
+// Funkcja do uploadu wideo strumieniowo z walidacją odpowiedzi API
 async function uploadVideo(libraryId, videoId, videoPath, apiKey) {
     const url = `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`;
     const headers = { 'AccessKey': apiKey, 'Content-Type': 'application/octet-stream' };
@@ -175,10 +206,10 @@ async function processVideosWithThreadLimit(folderPath, apiKey, libraryId, maxTh
 
 // Główna funkcja
 async function uploadToBunnyStream() {
-    const libraryId = '311891';  // Zamień na swoje ID biblioteki
-    const apiKey = '4db19f82-0676-4ad5-8bf15e31e9fc-0831-4a24';        // Twój klucz API Bunny Stream
+    const libraryId = '314887';  // Zamień na swoje ID biblioteki
+    const apiKey = '271d80bb-3ebd-4eab-aedf951bf504-04f6-45f2';        // Twój klucz API Bunny Stream
     const folderPath = './converted';   // Ścieżka do folderu z plikami wideo
-    const maxThreads = 5;            // Maksymalna liczba jednoczesnych wątków
+    const maxThreads = 2;            // Maksymalna liczba jednoczesnych wątków
 
     console.log('Rozpoczynam przetwarzanie plików wideo...');
     await processVideosWithThreadLimit(folderPath, apiKey, libraryId, maxThreads);
