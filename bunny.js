@@ -147,7 +147,7 @@ if (!isMainThread) {
 
 // Funkcja do przetwarzania plików wideo z limitem wątków
 async function processVideosWithThreadLimit(folderPath, apiKey, libraryId, maxThreads) {
-    const videoFiles = fs.readdirSync(folderPath).filter(file => path.extname(file) === '.mp4');
+    const videoFiles = fs.readdirSync(folderPath).filter(file => path.extname(file) === '.flv');
     
     // Pasek postępu
     const bar = new ProgressBar('[:bar] :percent - Przetwarzanie plików wideo', {
@@ -208,7 +208,7 @@ async function processVideosWithThreadLimit(folderPath, apiKey, libraryId, maxTh
 async function uploadToBunnyStream() {
     const libraryId = '314887';  // Zamień na swoje ID biblioteki
     const apiKey = '271d80bb-3ebd-4eab-aedf951bf504-04f6-45f2';        // Twój klucz API Bunny Stream
-    const folderPath = './converted';   // Ścieżka do folderu z plikami wideo
+    const folderPath = './complete';   // Ścieżka do folderu z plikami wideo
     const maxThreads = 2;            // Maksymalna liczba jednoczesnych wątków
 
     console.log('Rozpoczynam przetwarzanie plików wideo...');
